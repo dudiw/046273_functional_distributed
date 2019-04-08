@@ -30,22 +30,18 @@ trianglesArea({shapes, [H | T]}) ->
 	Filtered = shapesFilter2(triangle),
 	shapesArea(Filtered({shapes, [H | T]})).
 
+valid({_shape, {dim, A, B}}) when A > 0, B > 0 -> true;
+valid({_shape, {radius, A, B}}) when A > 0, B > 0 -> true.
+
 shapesFilter(Shape) 
 	when Shape =:= rectangle; 
 	Shape =:= ellipse; 
 	Shape =:= triangle -> 
 
-	% Handle shape decriptor for rectangle, triangle and ellipse
-	TargetDim = case Shape of
-		rectangle -> dim;
-		triangle -> dim;
-		ellipse -> radius
-	end,
-	TargetDim,
 	fun(Shapes) -> 
 		{_shapes, Elements} = Shapes,
-		{shapes, [Element || {Target, {Dim, A, B}} = Element <- Elements, 
-			Target =:= Shape, Dim =:= TargetDim, A > 0, B > 0]}
+		{shapes, [Element || {Target, _Dim} = Element <- Elements, 
+			valid(Element), Target =:= Shape]}
 	end.
 
 shapesFilter2(Shape) 
@@ -66,6 +62,6 @@ shapesFilter2(Shape)
 	Reshape,
 	fun(Shapes) -> 
 		Filter = shapesFilter(Reshape),
-		{_shapes, Elements} = Shapes,
-		{shapes, [Element || {_Target, {_Dim, A, B}} = Element <- Filter(Elements), A == B]}
+		{_shapes, Elements} = Filter(Shapes),
+		{shapes, [Element || {_Target, {_Dim, A, B}} = Element <- Elements, A == B]}
 	end.
