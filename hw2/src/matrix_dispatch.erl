@@ -1,26 +1,39 @@
 -module(matrix_dispatch). 
--compile([
-    multiply_task/1
-]).
+-export([multiply/1]).
 
-multiply_task(Request) ->
-    
-    list_to_tuple([list_to_tuple([0 || _Y <- lists:seq(1, Y)]) || _X <- lists:seq(1, X)]).
+% spawn a process to manage matrix multiplication.
+multiply(Request) ->
+    SelfPid = self(),
+    spawn(fun() -> multiply_async(SelfPid, Request) end).
 
-% return the Row of a Matrix in a tuple format 
-get_row(Mat, Row) ->
-    element(Row, Mat).
+% spawn worker processes to perform the multiplication
+multiply_async(SelfPid, Request) ->
+    {Pid, MsgRef, Mat1, Mat2} = Request,
+    {M, N} = matrix:product_dimension(Mat1, Mat2),
 
-% return the Coloumn of a Matrix in a tuple format 
-get_column(Mat, Col) ->
-    list_to_tuple([element(Col,ColData) || ColData <- tuple_to_list(Mat)]).
+    % spawn 'worker' processes to perform the multiplication
+    [spawn(fun() ->
+           multiply_task(SelfPid, Mat1, Row, Mat2, Col)
+         end) || Row <- lists:seq(1, M), Col <- lists:seq(1, N)],
 
-% return a new Matrix which is a copy of OldMat with a NewVal as the value of Row,Col 
-set_element(Row, Col, OldMat, NewVal) ->
-    setelement(Row, OldMat, setelement(Col, element(Row, OldMat), NewVal)).
+    % total count of product elements
+    Pending = M * N,
+    Target = matrix:zeros(M, N),
 
-% return the inner product of Row a row vector and Col a column vector.
-inner_product(Row, Col) ->
-    RowVector = tuple_to_list(Row),
-    ColumnVector = tuple_to_list(Col),
-    [ X * Y || X <- RowVector, Y <- ColumnVector ].
+    % wait for the workers to complete the multiplication
+    Result = await_response(Pending, Target),
+    Pid ! {MsgRef, Result}.
+
+await_response(0, Result) ->
+    Result;
+await_response(Pending, Target) ->
+    receive
+        {Row, Col, Value} ->
+            Update = matix:set_element(Row, Col, Target, Value),
+            await_response(Pending - 1, Update)
+    end.
+
+% calculate the element [Row, Col] of the matrix product Mat1 · Mat2
+multiply_task(CallerPid, Mat1, Row, Mat2, Col) ->
+  Product = matrix:inner_product(Mat1, Row, Mat2, Col),
+  CallerPid ! {Row, Col, Product}.
