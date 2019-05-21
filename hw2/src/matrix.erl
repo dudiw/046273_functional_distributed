@@ -29,7 +29,10 @@ set_element(Row, Col, OldMat, NewVal) ->
 inner_product(Mat1, Row, Mat2, Col) ->
     RowVector = tuple_to_list(row(Mat1, Row)),
     ColumnVector = tuple_to_list(column(Mat2, Col)),
-    [ X * Y || X <- RowVector, Y <- ColumnVector ].
+    lists:foldl(
+        fun({R, C}, Sum) -> 
+            R * C + Sum end, 
+        0, lists:zip(RowVector, ColumnVector)).
 
 % return the matrix dimensions A[M x N] (length Row x Column). 
 size(Mat) ->

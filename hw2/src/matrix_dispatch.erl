@@ -3,12 +3,12 @@
 
 % spawn a process to manage matrix multiplication.
 multiply(Request) ->
-    SelfPid = self(),
-    spawn(fun() -> multiply_async(SelfPid, Request) end).
+    spawn(fun() -> multiply_async(Request) end).
 
 % spawn worker processes to perform the multiplication
-multiply_async(SelfPid, Request) ->
+multiply_async(Request) ->
     {Pid, MsgRef, Mat1, Mat2} = Request,
+    SelfPid = self(),
     {M, N} = matrix:product_dimension(Mat1, Mat2),
 
     % spawn 'worker' processes to perform the multiplication
@@ -29,11 +29,11 @@ await_response(0, Result) ->
 await_response(Pending, Target) ->
     receive
         {Row, Col, Value} ->
-            Update = matix:set_element(Row, Col, Target, Value),
+            Update = matrix:set_element(Row, Col, Target, Value),
             await_response(Pending - 1, Update)
     end.
 
 % calculate the element [Row, Col] of the matrix product Mat1 · Mat2
 multiply_task(CallerPid, Mat1, Row, Mat2, Col) ->
-  Product = matrix:inner_product(Mat1, Row, Mat2, Col),
-  CallerPid ! {Row, Col, Product}.
+    Product = matrix:inner_product(Mat1, Row, Mat2, Col),
+    CallerPid ! {Row, Col, Product}.
