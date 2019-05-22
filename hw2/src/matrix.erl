@@ -34,15 +34,17 @@ inner_product(Mat1, Row, Mat2, Col) ->
             R * C + Sum end, 
         0, lists:zip(RowVector, ColumnVector)).
 
-% return the matrix dimensions A[M x N] (length Row x Column). 
+% return the matrix dimensions A[M x N] 
+% M number of rows equals column length
+% N number of column equals row length
 size(Mat) ->
-    M = tuple_size(row(Mat, 1)),
-    N = tuple_size(column(Mat, 1)),
+    M = tuple_size(column(Mat, 1)),
+    N = tuple_size(row(Mat, 1)),
     {M, N}.
 
 % return the dimensions of the product A · B = C
 % A              ·  B              = C             
-%  [Row1 x Col1]     [Row2 x Col2]    [Row1 x Col2]
+%  [M x N]           [N x P]          [M x P]
 product_dimension(Mat1, Mat2) ->
     {Row1, _Col1} = matrix:size(Mat1),
     {_Row2, Col2} = matrix:size(Mat2),
