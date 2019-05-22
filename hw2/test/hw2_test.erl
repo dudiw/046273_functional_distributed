@@ -20,7 +20,8 @@ run() ->
     matrix_server:shutdown(),
     io:format("start2.3 ~n"),
     c:i(),% make sure both are dead
-    whereis(matrix_server),% should be 'undefined'
+    % whereis should be 'undefined'
+    message_debug("matrix_server:shutdown()","fail",whereis(matrix_server),undefined),
 
     io:format("start3 ~n"),
     % test supervisor
@@ -39,6 +40,10 @@ run() ->
     matrix_server:get_version(),%version 4
     whereis(matrix_server) ! sw_upgrade,
     io:format("start4.2 ~p ~n", [matrix_server:get_version()]),%version 5
+    io:format("start4.3 get_version async ~n"),
+    get_version_async(version_1),
+    io:format("start4.4 sw_upgrade_async async ~n"),
+    matrix_server ! sw_upgrade,
 
     %test matrix multiplication:
     I2 = {{ 1, 0},{ 0, 1}},
@@ -132,19 +137,36 @@ run() ->
     matrix_server:mult(I2, B2 ), %get B2
 
     io:format("start7.4 ~n"),
-    matrix_server:mult(A2, I2 ), %get A2
-    matrix_server:mult(B2, I2 ), %get B2
-    matrix_server:mult(A2, A2 ), 
-    matrix_server:mult(B2, B2 ), 
+    matrix_server:mult(A2, I2), %get A2
+    matrix_server:mult(B2, I2), %get B2
+    matrix_server:mult(A2, A2), 
+    matrix_server:mult(B2, B2), 
 
     io:format("start8 ~n"),
     io:format("matrix_server:explanation() ~n ~p ~n",[matrix_server:explanation()]),
-    matrix_server:shutdown().
 
+    io:format("start9 shutdown ~n"),
+    matrix_server:shutdown(),
+    io:format("start10 post_shutdown_whereis ~n"),
+    Pid = whereis(matrix_server),
+    message_debug("matrix_server:shutdown()","fail",Pid,undefined),
+
+    io:format("start11 attempt message after shutdown ~n"),
+    matrix_server:mult(B2, B2).
+
+get_version_async(Ref) ->
+    Pid = self(),
+    MsgRef = make_ref(),
+    Request = {Pid, MsgRef, get_version},
+    matrix_server ! Request,
+    receive
+            {MsgRef, Response} -> 
+                message_debug("get_version", "rpc", Ref, Response)
+    end.
 
 multiply_match_matrices(A, B, Ref) ->
     Result = matrix_server:mult(A, B),
-    multiply_debug(A, B, Ref, Result).
+    message_debug(A, B, Ref, Result).
 
 multiply_match_matrices_async(A, B, Ref) ->
     Pid = self(),
@@ -153,15 +175,15 @@ multiply_match_matrices_async(A, B, Ref) ->
     matrix_server ! Request,
     receive
             {MsgRef, Response} -> 
-                multiply_debug(A, B, Ref, Response)
+                message_debug(A, B, Ref, Response)
     end.
 
-multiply_debug(A, B, Ref, Result) ->
+message_debug(A, B, Ref, Result) ->
     if
         Ref == Result ->
             io:format("Pass ~n");
         true -> 
-            io:format("Ref ~p Result ~p match ~p ~n",[Ref, Result, Ref == Result])
+            io:format("~p ~p ~nRef ~p Result ~p match ~p ~n",[A, B, Ref, Result, Ref == Result])
     end.
 
 %%%%%%%%%%%%%%%%%%%%matlab code for testing: run line by line 
