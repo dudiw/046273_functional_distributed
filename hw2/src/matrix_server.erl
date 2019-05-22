@@ -46,4 +46,6 @@ loop() ->
     end.
 
 explanation() -> 
-    {"The supervisor and the server module should be separated so that the server can be upgraded without stopping the supervisor"}.
+    {"The supervisor and the server modules should be separated " 
+    "so that the server can be upgraded without stopping or reloading "
+    "the supervisor after server upgrade and recompilation."}.
