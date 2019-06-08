@@ -33,10 +33,11 @@ list_servers() -> [get_name(N) || N <- lists:seq(1,3)].
 count_tasks(Number) -> 
 	Name = get_name(Number),
 	Count = gen_server:call(Name, count_tasks),
-	{Name, Count}.
+	{message_queue_len, Length} = erlang:process_info(whereis(Name), message_queue_len),
+	{Name, Count + Length}.
 
 set_task(Name, Task) -> 
-	gen_server:cast(Name, {add, Task}),
+	gen_server:call(Name, {add, Task}),
 	ok.
 
 get_report() -> [calc_supervisor:count_tasks(N) || N <- lists:seq(1,3)].

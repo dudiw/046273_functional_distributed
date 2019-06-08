@@ -4,40 +4,51 @@
 
 run() ->
     io:format("hw3_test:run ~n"),
-    io:format("loadBalance1 ~p ~n", [loadBalance:startServers()]),
-    io:format("loadBalance2.1 ~p ~n", [whereis(server1)]),
-    io:format("loadBalance2.2 ~p ~n", [whereis(server2)]),
-    io:format("loadBalance2.3 ~p ~n", [whereis(server3)]),
+    io:format("loadBalance1:start ~p ~n", [loadBalance:startServers()]),
+    io:format("hw3_test:whereis(server1) ~p ~n", [whereis(server1)]),
+    io:format("hw3_test:whereis(server2) ~p ~n", [whereis(server2)]),
+    io:format("hw3_test:whereis(server3) ~p ~n", [whereis(server3)]),
 
-    io:format("hw3_test:numberOfRunningFunctions ~n"),
-    io:format("numberOfRunningFunctions1 ~p ~n", [loadBalance:numberOfRunningFunctions(1)]),
-    io:format("numberOfRunningFunctions2 ~p ~n", [loadBalance:numberOfRunningFunctions(2)]),
-    io:format("numberOfRunningFunctions3 ~p ~n", [loadBalance:numberOfRunningFunctions(3)]),
+    io:format("hw3_test:generate_tasks start ~n"),
+    TaskDuration = 3000,
+    Count = 1000,
+    {Duration,_} = timer:tc(fun() -> generate_tasks(TaskDuration, Count) end),
+    Delay = round(Duration/1000) + 1,
+    io:format("hw3_test:generate_tasks done ~p ms ~n", [Delay]),
 
-    io:format("hw3_test:start_async_task ~n"),
-    lists:foreach(fun(N) -> start_async_task(N), timer:sleep(1) end, lists:seq(1,10000)),
+    timer:sleep(round(Delay/10)),
+    io:format("hw3_test:countTasks1 ~n"),
+    io:format("loadBalance:countTasks1 ~p ~n", [loadBalance:numberOfRunningFunctions(1)]),
+    io:format("loadBalance:countTasks2 ~p ~n", [loadBalance:numberOfRunningFunctions(2)]),
+    io:format("loadBalance:countTasks3 ~p ~n", [loadBalance:numberOfRunningFunctions(3)]),
 
-    io:format("hw3_test:sleep 2 sec ~n"),
-    timer:sleep(8000),
-    io:format("loadBalance3 ~p ~n", [loadBalance:stopServers()]).
+    timer:sleep(round(Delay/10)),
+    io:format("hw3_test:countTasks2 ~n"),
+    io:format("loadBalance:countTasks1 ~p ~n", [loadBalance:numberOfRunningFunctions(1)]),
+    io:format("loadBalance:countTasks2 ~p ~n", [loadBalance:numberOfRunningFunctions(2)]),
+    io:format("loadBalance:countTasks3 ~p ~n", [loadBalance:numberOfRunningFunctions(3)]),
 
-start_async_task(N) ->
+    timer:sleep(round(Delay/10)),
+    io:format("hw3_test:countTasks3 ~n"),
+    io:format("loadBalance:countTasks1 ~p ~n", [loadBalance:numberOfRunningFunctions(1)]),
+    io:format("loadBalance:countTasks2 ~p ~n", [loadBalance:numberOfRunningFunctions(2)]),
+    io:format("loadBalance:countTasks3 ~p ~n", [loadBalance:numberOfRunningFunctions(3)]),
+    
+    io:format("hw3_test:sleep ~p ms ~n", [TaskDuration + Delay]),
+    timer:sleep(TaskDuration + Delay),
+    io:format("loadBalance3:stop ~p ~n", [loadBalance:stopServers()]).
+
+generate_tasks(TaskDuration, Count) ->
+    lists:foreach(fun(N) -> start_async_task(N, TaskDuration) end, lists:seq(1,Count)).
+
+start_async_task(N, TaskDuration) ->
     spawn(fun() ->
             ClientPid = self(),
             MsgRef = make_ref(),            
-            F = fun() -> timer:sleep(3000), N end,
+            F = fun() -> timer:sleep(TaskDuration), N end,
             loadBalance:calcFun(ClientPid, F, MsgRef),
             receive
-                {MsgRef, F_result} -> io:format("async_t res ~p ref ~p pid ~p ~n", [F_result, MsgRef, ClientPid])
+                {MsgRef, F_result} -> ok
+              % {MsgRef, F_result} -> io:format("async_t res ~p ref ~p pid ~p ~n", [F_result, MsgRef, ClientPid])
             end
          end).
-
-% get_version_async(Ref) ->
-%     Pid = self(),
-%     MsgRef = make_ref(),
-%     Request = {Pid, MsgRef, get_version},
-%     matrix_server ! Request,
-%     receive
-%             {MsgRef, Response} -> 
-%                 message_debug("get_version", "rpc", Ref, Response)
-%     end.

@@ -32,6 +32,5 @@ calcFun(Pid, F, MsgRef) ->
     Server = element(1, Status),
     io:format("ldBl:pre-clcFun report ~p dst srv ~p~n", [Report, Server]),
     calc_supervisor:set_task(Server, {Pid, F, MsgRef}),
-    % io:format("ldBl:post-clcFun report ~p dst srv ~p~n", [calc_supervisor:get_report(), Server]),
     ok.
 
