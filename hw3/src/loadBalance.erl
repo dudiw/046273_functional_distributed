@@ -28,7 +28,15 @@ numberOfRunningFunctions(Number) ->
 calcFun(Pid, F, MsgRef) -> 
     Report = calc_supervisor:get_report(),
     Sorted = lists:keysort(2, Report),
-    Status = lists:nth(1, Sorted),
+    
+    {_Busy, High} = lists:nth(3, Sorted),
+    {_Medium, Mid} = lists:nth(2, Sorted),
+    N = if 
+        High == 0 -> rand:uniform(3);
+        Mid == 0 -> rand:uniform(2);
+        true -> 1
+    end,
+    Status = lists:nth(N, Sorted),
     Server = element(1, Status),
     io:format("ldBl:pre-clcFun report ~p dst srv ~p~n", [Report, Server]),
     calc_supervisor:set_task(Server, {Pid, F, MsgRef}),

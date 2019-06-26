@@ -11,7 +11,7 @@ run() ->
 
     io:format("hw3_test:generate_tasks start ~n"),
     TaskDuration = 3000,
-    Count = 1000,
+    Count = 300,
     {Duration,_} = timer:tc(fun() -> generate_tasks(TaskDuration, Count) end),
     Delay = round(Duration/1000) + 1,
     io:format("hw3_test:generate_tasks done ~p ms ~n", [Delay]),
